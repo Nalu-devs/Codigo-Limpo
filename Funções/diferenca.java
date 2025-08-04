@@ -32,6 +32,43 @@ public static String testableHtml(
     }
     buffer.append(pageData.getContent());
     if(pageData.hasAttribute("Test")){
-        WikiPage
+        WikiPage teardown = PageCrawlerImpl.getInheritedPage("TearDown", wikiPage);
+        if(teardown != null){
+            WikiPagePath teardownPath = wikiPage.getePageCrawler().getFullPath(teardown);
+            String tearDownPathName = PathParser.render(tearDownPath);
+            buffer  .append("\n")
+                    .append("!include -teardown .")
+                    .append(tearDownPathName)
+                    .append("\n");
+        }
+        if(includeSuiteSetup){
+            WikiPage suiteTeardown = PageCrawlerImpl.getInheritedPage(SuiteResponder.SUITE_TEARDOWN_NAME, wikiPage);
+            if(suiteTeardown != null){
+                WikiPagePath pagePath = suiteTeardown.getPageCrawler().getFullPath (suiteTeardown);
+                String pagePathName = PathParser.render(pagePath);
+                buffer  .append("!=include -teardown .")
+                        .append(pagePathName)
+                        .append("\n");
+            }
+        }
     }
+pageData.setContent(buffer.toString());
+return pageData.getHtml();
+}
+
+//Com poucas extrações simples de metodos, algumas renomeações e um pouco de 
+//reestruturação temos nove linhas do mesmo codigo
+public static String renderPageWithSetupsAndTeardowns(
+    PageData pageData, boolean isSuite
+) throws Exception{
+    boolean isTestPage = pageData.hasAttribute("Test");
+    if(isTestPage){
+        WikiPage testPage = pageData.getWikiPage();
+        StringBuffer newPageContent = new StringBuffer();
+        includeSetupPages (testPage, newPageContent, isSuite);
+        newPageContent.append(pageData.getContent());
+        includeTeardownPages(testPage, newPageContent, isSuite);
+        pageData.setContent(newPageContent.toString());
+    }
+    return pageData.getHtml()
 }
